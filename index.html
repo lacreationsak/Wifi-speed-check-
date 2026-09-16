@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#eaf2ff" />
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem("signal-theme");
+                document.documentElement.dataset.theme = saved === "dark" || saved === "light" ? saved : "light";
+            } catch (error) {
+                document.documentElement.dataset.theme = "light";
+            }
+        })();
+    </script>
+    <title>Signal — Wi-Fi Speed Check</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <!-- Multi-tier ambient chromatic illumination layers -->
+    <div class="ambient-canvas" aria-hidden="true">
+        <div class="ambient-orb orb-1"></div>
+        <div class="ambient-orb orb-2"></div>
+        <div class="ambient-orb orb-3"></div>
+        <div class="ambient-orb orb-4"></div>
+        <div class="ambient-ray ray-1"></div>
+        <div class="ambient-ray ray-2"></div>
+        <div class="ambient-mesh"></div>
+    </div>
+
+    <!-- Corner typographic labels — decorative, positional accent text -->
+    <div class="corner-label corner-tl" aria-hidden="true">TEST&nbsp;/&nbsp;MEASURE<br />KNOW&nbsp;YOUR&nbsp;LINE</div>
+    <div class="corner-label corner-tr" aria-hidden="true">FOR&nbsp;/&nbsp;EVERY<br />CONNECTION</div>
+    <div class="corner-label corner-bl" aria-hidden="true">SPEED&nbsp;/&nbsp;PING<br />JITTER</div>
+    <div class="corner-label corner-br" aria-hidden="true">SIMPLE&nbsp;/&nbsp;FAST<br />NO&nbsp;SIGNUP</div>
+
+    <main class="shell">
+        <!-- Floating Glass Navigation Capsule -->
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-orb" aria-hidden="true">
+                    <span class="brand-mark">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                            <path d="M3 12.5a13 13 0 0 1 18 0" />
+                            <path d="M6.5 16a8 8 0 0 1 11 0" />
+                            <path d="M10 19.5a3 3 0 0 1 4 0" />
+                            <circle cx="12" cy="21" r=".7" fill="currentColor" />
+                        </svg>
+                    </span>
+                </span>
+                <span class="brand-title">Signal</span>
+            </div>
+
+            <div class="topbar-controls">
+                <div class="connection-pill">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span class="connection-status-text" id="connectionStatus">Checking connection</span>
+                    <span class="connection-link-text" id="connectionLink"></span>
+                </div>
+
+                <button class="theme-toggle" id="themeToggle" type="button" role="switch" aria-checked="false"
+                    aria-label="Switch to dark mode">
+                    <span class="toggle-track-icon sun" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                            stroke-linecap="round">
+                            <circle cx="12" cy="12" r="4.2" />
+                            <path
+                                d="M12 2.5v2.4M12 19.1v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7" />
+                        </svg>
+                    </span>
+                    <span class="toggle-track-icon moon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z" />
+                        </svg>
+                    </span>
+                    <span class="toggle-thumb" aria-hidden="true">
+                        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+                            stroke-linecap="round">
+                            <circle cx="12" cy="12" r="4.2" />
+                            <path
+                                d="M12 2.5v2.4M12 19.1v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7" />
+                        </svg>
+                        <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z" />
+                        </svg>
+                    </span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Hero Introduction Section -->
+        <section class="intro">
+            <div class="eyebrow-capsule">
+                <span class="eyebrow-beacon"></span>
+                <span class="eyebrow">Connection intelligence</span>
+            </div>
+            <h1>See how your Wi‑Fi<br /><span class="gradient-text">is really performing.</span></h1>
+            <p class="intro-text">Measure download, upload, and response time in one clean snapshot of your connection.
+            </p>
+
+            <div class="floating-badges" aria-hidden="true">
+                <div class="float-badge">
+                    <span class="float-badge-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" /></svg>
+                    </span>
+                    <span class="float-badge-text">Test &amp; measure<small>Know your line</small></span>
+                </div>
+                <div class="float-badge">
+                    <span class="float-badge-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12.5a13 13 0 0 1 18 0" /><path d="M6.5 16a8 8 0 0 1 11 0" /><path d="M10 19.5a3 3 0 0 1 4 0" /><circle cx="12" cy="21" r=".7" fill="currentColor" /></svg>
+                    </span>
+                    <span class="float-badge-text">Every connection<small>For every network</small></span>
+                </div>
+                <div class="float-badge">
+                    <span class="float-badge-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></svg>
+                    </span>
+                    <span class="float-badge-text">Speed · Ping · Jitter<small>All three, one run</small></span>
+                </div>
+                <div class="float-badge">
+                    <span class="float-badge-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z" /></svg>
+                    </span>
+                    <span class="float-badge-text">Simple &amp; fast<small>No signup needed</small></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Decorative Trust Orbit — a purely visual "fake" preview: a
+             sample stat circle with the four glass badges floating
+             gently around it, matching the reference capture. This is
+             NOT the real test (that's the cockpit section below it) —
+             it exists only so the page feels alive before the real
+             cockpit is visible. Nothing here is wired to script.js. -->
+        <section class="orbit-stage" aria-label="Live network snapshot preview">
+            <div class="orbit-stage-bg" aria-hidden="true">
+                <span class="orbit-ring-trace orbit-ring-trace-1"></span>
+                <span class="orbit-ring-trace orbit-ring-trace-2"></span>
+            </div>
+
+            <div class="orbit-stage-inner">
+                <div class="orbit-badge orbit-badge-tl" aria-hidden="true">
+                    <span class="orbit-badge-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6.5v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9v-6L12 3Z" /></svg>
+                    </span>
+                    <span class="orbit-badge-copy"><strong>99.99%</strong><small>Uptime</small></span>
+                </div>
+                <div class="orbit-badge orbit-badge-tr" aria-hidden="true">
+                    <span class="orbit-badge-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" /></svg>
+                    </span>
+                    <span class="orbit-badge-copy"><strong>12 ms</strong><small>Global latency</small></span>
+                </div>
+                <div class="orbit-badge orbit-badge-bl" aria-hidden="true">
+                    <span class="orbit-badge-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+                    </span>
+                    <span class="orbit-badge-copy"><strong>256-bit</strong><small>Encrypted</small></span>
+                </div>
+                <div class="orbit-badge orbit-badge-br" aria-hidden="true">
+                    <span class="orbit-badge-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.5 7-11.5A7 7 0 0 0 5 9.5C5 14.5 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.4" /></svg>
+                    </span>
+                    <span class="orbit-badge-copy"><strong>2,400+</strong><small>Locations tracked</small></span>
+                </div>
+
+                <div class="orbit-core-shadow" aria-hidden="true"></div>
+                <div class="orbit-halo" aria-hidden="true"></div>
+                <div class="orbit-core" aria-hidden="true">
+                    <div class="orbit-core-ring"></div>
+                    <div class="orbit-core-inner">
+                        <span class="orbit-core-phase">Sample reading</span>
+                        <div class="orbit-core-number">412<span class="orbit-core-unit">Mbps</span></div>
+                        <span class="orbit-core-caption">Download speed</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Speed Test Cockpit (Liquid Glass Console) -->
+        <section class="hero-card" id="heroCockpit" aria-label="Speed test results">
+            <div class="glass-reflection" aria-hidden="true"></div>
+            <div class="glass-pointer-light" aria-hidden="true"></div>
+
+            <!-- Left Telemetry Cluster: Download & Upload -->
+            <div class="stat-side stat-side-left">
+                <article class="stat-card" data-stat="download">
+                    <div class="stat-header">
+                        <span class="stat-label">
+                            <span class="stat-dot stat-dot-blue"></span> Download
+                        </span>
+                        <div class="stat-icon stat-icon-download">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 4v13m0 0-5-5m5 5 5-5" />
+                                <path d="M4 20h16" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="value-row">
+                        <span class="metric-value" id="downloadValue">—</span>
+                        <span class="metric-unit">Mbps</span>
+                    </div>
+                    <div class="stat-mini-trace" aria-hidden="true">
+                        <svg class="sparkline" viewBox="0 0 100 24" fill="none">
+                            <path class="trace-base" pathLength="100" stroke="#1666ee"
+                                d="M0 19 Q 14 9 28 14 T 56 8 T 78 13 T 100 6" />
+                            <path class="trace-comet" pathLength="100"
+                                d="M0 19 Q 14 9 28 14 T 56 8 T 78 13 T 100 6" />
+                        </svg>
+                    </div>
+                    <div class="stat-footer">
+                        <span class="stat-hint">Peak bandwidth</span>
+                        <span class="stat-tag tag-blue">Fast stream</span>
+                    </div>
+                </article>
+
+                <article class="stat-card" data-stat="upload">
+                    <div class="stat-header">
+                        <span class="stat-label">
+                            <span class="stat-dot stat-dot-cyan"></span> Upload
+                        </span>
+                        <div class="stat-icon stat-icon-upload">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 20V7m0 0-5 5m5-5 5 5" />
+                                <path d="M4 4h16" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="value-row">
+                        <span class="metric-value" id="uploadValue">—</span>
+                        <span class="metric-unit">Mbps</span>
+                    </div>
+                    <div class="stat-mini-trace" aria-hidden="true">
+                        <svg class="sparkline" viewBox="0 0 100 24" fill="none">
+                            <path class="trace-base" pathLength="100" stroke="#17a5e8"
+                                d="M0 17 Q 16 15 32 8 T 62 13 T 84 7 T 100 12" />
+                            <path class="trace-comet" pathLength="100"
+                                d="M0 17 Q 16 15 32 8 T 62 13 T 84 7 T 100 12" />
+                        </svg>
+                    </div>
+                    <div class="stat-footer">
+                        <span class="stat-hint">Outbound rate</span>
+                        <span class="stat-tag tag-cyan">Stable</span>
+                    </div>
+                </article>
+            </div>
+
+            <!-- Center Telemetry Focal Gauge -->
+            <div class="meter-wrap">
+                <div class="meter-halo" aria-hidden="true"></div>
+                <div class="meter" id="meterDial">
+                    <div class="meter-backdrop-groove" aria-hidden="true"></div>
+                    <div class="meter-ring" id="meterRing"></div>
+                    <div class="meter-inner">
+                        <div class="meter-lens" aria-hidden="true"></div>
+                        <div class="meter-phase-wrapper">
+                            <span class="phase-beacon"></span>
+                            <div class="meter-phase" id="meterPhase">Ready to test</div>
+                        </div>
+                        <div class="meter-number-wrapper">
+                            <div class="meter-number" id="meterNumber">0</div>
+                        </div>
+                        <span class="meter-unit">Mbps</span>
+                        <div class="meter-caption">
+                            <span class="caption-dot"></span>
+                            <span>Powered by Cloudflare</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Telemetry Cluster: Ping & Jitter -->
+            <div class="stat-side stat-side-right">
+                <article class="stat-card" data-stat="ping">
+                    <div class="stat-header">
+                        <span class="stat-label">
+                            <span class="stat-dot stat-dot-azure"></span> Ping
+                        </span>
+                        <div class="stat-icon stat-icon-ping">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="8" />
+                                <path d="m12 8 2.5 4H10l2 4" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="value-row">
+                        <span class="metric-value" id="pingValue">—</span>
+                        <span class="metric-unit">ms</span>
+                    </div>
+                    <div class="stat-mini-trace" aria-hidden="true">
+                        <svg class="sparkline" viewBox="0 0 100 24" fill="none">
+                            <path class="trace-base" pathLength="100" stroke="#3d8bf5"
+                                d="M0 14 H18 L21 14 L25 5 L29 21 L33 11 L37 14 H60 L63 14 L67 5 L71 21 L75 11 L79 14 H100" />
+                            <path class="trace-comet" pathLength="100"
+                                d="M0 14 H18 L21 14 L25 5 L29 21 L33 11 L37 14 H60 L63 14 L67 5 L71 21 L75 11 L79 14 H100" />
+                        </svg>
+                    </div>
+                    <div class="stat-footer">
+                        <span class="stat-hint">Round-trip latency</span>
+                        <span class="stat-tag tag-blue">Low latency</span>
+                    </div>
+                </article>
+
+                <article class="stat-card" data-stat="jitter">
+                    <div class="stat-header">
+                        <span class="stat-label">
+                            <span class="stat-dot stat-dot-indigo"></span> Jitter
+                        </span>
+                        <div class="stat-icon stat-icon-jitter">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 12h3l2-6 4 12 2-6h3l2-3 2 3h3" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="value-row">
+                        <span class="metric-value" id="jitterValue">—</span>
+                        <span class="metric-unit">ms</span>
+                    </div>
+                    <div class="stat-mini-trace" aria-hidden="true">
+                        <svg class="sparkline" viewBox="0 0 100 24" fill="none">
+                            <path class="trace-base" pathLength="100" stroke="#5a4fe0"
+                                d="M0 13 H10 L13 13 L16 6 L19 20 L22 11 L25 13 H44 L47 13 L50 4 L53 21 L56 11 L59 13 H80 L83 13 L86 7 L89 19 L92 12 L95 13 H100" />
+                            <path class="trace-comet" pathLength="100"
+                                d="M0 13 H10 L13 13 L16 6 L19 20 L22 11 L25 13 H44 L47 13 L50 4 L53 21 L56 11 L59 13 H80 L83 13 L86 7 L89 19 L92 12 L95 13 H100" />
+                        </svg>
+                    </div>
+                    <div class="stat-footer">
+                        <span class="stat-hint">Packet variance</span>
+                        <span class="stat-tag tag-indigo">Smooth</span>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Primary Action Trigger & Diagnostic Stage Flow -->
+        <div class="actions">
+            <button class="test-button" id="testButton" type="button">
+                <span class="btn-rim" aria-hidden="true"></span>
+                <span class="btn-glow" aria-hidden="true"></span>
+                <span class="btn-icon">
+                    <svg class="play" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="m8 5 11 7-11 7V5Z" />
+                    </svg>
+                    <svg class="stop" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7 7h10v10H7z" />
+                    </svg>
+                </span>
+                <span class="btn-label" id="buttonText">Start speed test</span>
+            </button>
+        </div>
+
+        <p class="stage-copy" id="stageCopy">Ready when you are. This usually takes less than 20 seconds.</p>
+
+        <div class="steps-flow" aria-hidden="true">
+            <div class="step-chip">
+                <span class="step" id="step-ping"></span>
+                <span class="step-text">Ping</span>
+            </div>
+            <span class="step-divider"></span>
+            <div class="step-chip">
+                <span class="step" id="step-download"></span>
+                <span class="step-text">Download</span>
+            </div>
+            <span class="step-divider"></span>
+            <div class="step-chip">
+                <span class="step" id="step-upload"></span>
+                <span class="step-text">Upload</span>
+            </div>
+        </div>
+
+        <!-- Connection Insight Glass Card -->
+        <section class="result-summary" id="resultSummary" aria-live="polite" hidden>
+            <div class="result-highlight" aria-hidden="true"></div>
+            <div class="result-main">
+                <div class="result-icon-orb" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z" />
+                    </svg>
+                </div>
+                <div class="result-text-block">
+                    <p class="summary-eyebrow">Connection insight</p>
+                    <h2 id="recommendationTitle">Your connection is ready.</h2>
+                    <p id="recommendationCopy">Run a test to see what your connection is best suited for.</p>
+                </div>
+            </div>
+            <div class="result-actions">
+                <button class="result-button" id="copyResult" type="button" disabled>
+                    <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                    <span>Copy latest result</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Lower Diagnostic Telemetry Grid -->
+        <section class="info-grid">
+            <!-- Recent Tests Glass Panel -->
+            <div class="panel history">
+                <div class="panel-heading">
+                    <div class="panel-title-group">
+                        <span class="panel-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                        </span>
+                        <h2>Recent tests</h2>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="link-button" id="exportHistory" type="button" disabled>
+                            <svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            <span>Export CSV</span>
+                        </button>
+                        <button class="link-button" id="clearHistory" type="button">
+                            <svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path
+                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                            <span>Clear history</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="history-list" id="historyList"></div>
+            </div>
+
+            <!-- Network Environment Glass Panel -->
+            <aside class="panel network">
+                <div class="panel-heading">
+                    <div class="panel-title-group">
+                        <span class="panel-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                                <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                                <line x1="6" y1="6" x2="6.01" y2="6" />
+                                <line x1="6" y1="18" x2="6.01" y2="18" />
+                            </svg>
+                        </span>
+                        <h2>Your connection</h2>
+                    </div>
+                </div>
+                <!-- Three separate rows, because these are three different
+                     kinds of claim and collapsing them into one line is what
+                     produced the bogus "3G network" label:
+                       1. Transport  — fact, when the browser exposes it.
+                       2. Link class — inferred from the measurement.
+                       3. Browser report — the Network Information API's own
+                          rolling estimate, labelled as the quality tier it
+                          actually is rather than a radio generation. -->
+                <div class="network-detail">
+                    <span class="network-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12.5a13 13 0 0 1 18 0" />
+                            <path d="M6.5 16a8 8 0 0 1 11 0" />
+                            <path d="M10 19.5a3 3 0 0 1 4 0" />
+                            <circle cx="12" cy="21" r=".6" fill="currentColor" />
+                        </svg>
+                    </span>
+                    <div class="network-info">
+                        <div class="network-label">Connection</div>
+                        <div class="network-value" id="connectionType">Checking…</div>
+                        <div class="network-sub" id="connectionTypeNote"></div>
+                    </div>
+                </div>
+                <div class="network-detail">
+                    <span class="network-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 18V9M9.3 18V5M14.7 18v-6M20 18v-9" />
+                        </svg>
+                    </span>
+                    <div class="network-info">
+                        <div class="network-label">Link class</div>
+                        <div class="network-value" id="linkClass">Run a test to identify</div>
+                        <div class="network-sub" id="linkClassNote"></div>
+                    </div>
+                </div>
+                <div class="network-detail">
+                    <span class="network-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3a9 9 0 0 1 9 9" />
+                            <path d="M12 8a4 4 0 0 1 4 4" />
+                            <path d="M4.5 19.5 11 13" />
+                            <circle cx="4" cy="20" r="1.4" fill="currentColor" stroke="none" />
+                        </svg>
+                    </span>
+                    <div class="network-info">
+                        <div class="network-label">Browser report</div>
+                        <div class="network-value" id="browserReport">Not available</div>
+                        <div class="network-sub" id="browserReportNote"></div>
+                    </div>
+                </div>
+                <div class="network-detail">
+                    <span class="network-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" />
+                            <path d="M12 6v6l4 2" />
+                        </svg>
+                    </span>
+                    <div class="network-info">
+                        <div class="network-label">Test server</div>
+                        <div class="network-value">Cloudflare global network</div>
+                    </div>
+                </div>
+                <p class="network-note">No browser exposes the Wi‑Fi band, the Wi‑Fi generation or the
+                    mobile radio generation — that detail is withheld deliberately, because it would be a
+                    strong fingerprinting signal. Anything above marked <em>estimated</em> is worked out
+                    from the speeds and latency measured on this page.</p>
+            </aside>
+        </section>
+
+        <!-- Privacy Assurance Footer -->
+        <p class="privacy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <rect x="5" y="11" width="14" height="10" rx="2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </svg>
+            <span>Your results stay in this browser. Signal does not track or store personal data.</span>
+        </p>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

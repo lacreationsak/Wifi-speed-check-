@@ -1,0 +1,10 @@
+{
+  "name": "signal-speed-check",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Signal — a static Wi-Fi speed check page. Runs entirely client-side against speed.cloudflare.com, so it deploys to Vercel as a static site with no build step or serverless functions required.",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  }
+}
