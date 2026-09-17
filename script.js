@@ -18,7 +18,7 @@ const ENDPOINT = "https://speed.cloudflare.com";
 const TEST_CONFIG = {
     // Latency
     pingWarmups: 1,
-    pingSamples: 7,
+    pingSamples: 10,
 
     // Download: parallel streams, each asking for a large body. The run is
     // ended by DURATION rather than by the byte count, so a slow line simply
@@ -265,7 +265,17 @@ function initializeSpeedTest() {
         linkClass: document.querySelector("#linkClass"),
         linkClassNote: document.querySelector("#linkClassNote"),
         browserReport: document.querySelector("#browserReport"),
-        browserReportNote: document.querySelector("#browserReportNote")
+        browserReportNote: document.querySelector("#browserReportNote"),
+        signalStrength: document.querySelector("#signalStrength"),
+        signalStrengthNote: document.querySelector("#signalStrengthNote"),
+        signalBars: document.querySelector("#signalBars"),
+        gamingCard: document.querySelector("#gamingSummary"),
+        gamingTitle: document.querySelector("#gamingTitle"),
+        gamingCopy: document.querySelector("#gamingCopy"),
+        gamingPing: document.querySelector("#gamingPing"),
+        gamingJitter: document.querySelector("#gamingJitter"),
+        gamingLoss: document.querySelector("#gamingLoss"),
+        gamingBadge: document.querySelector("#gamingBadge")
     };
 
     const cockpit = document.querySelector("#heroCockpit");
@@ -576,6 +586,8 @@ function initializeSpeedTest() {
 
     async function measurePing(signal) {
         const readings = [];
+        let sent = 0;
+        let lost = 0;
 
         // The first request pays for DNS, the TLS handshake and connection
         // setup. Timing it would measure the handshake, not the round trip.
@@ -588,38 +600,57 @@ function initializeSpeedTest() {
             await warmup.arrayBuffer();
         }
 
+        // Browsers give no ICMP access, so "packet loss" here is a fetch that
+        // never came back rather than a dropped IP packet. It is still a
+        // useful, honestly-labelled proxy: a link that fails a fraction of
+        // these tiny round trips will also drop game-state packets.
         for (let index = 0; index < TEST_CONFIG.pingSamples; index += 1) {
-            const started = performance.now();
-            const response = await fetch(`${ENDPOINT}/__down?bytes=0&cache=${Math.random()}`, {
-                cache: "no-store",
-                signal
-            });
+            sent += 1;
 
-            if (!response.ok) {
-                throw new Error("Latency test unavailable");
+            try {
+                const started = performance.now();
+                const response = await fetch(`${ENDPOINT}/__down?bytes=0&cache=${Math.random()}`, {
+                    cache: "no-store",
+                    signal
+                });
+
+                if (!response.ok) {
+                    throw new Error("Latency sample failed");
+                }
+
+                await response.arrayBuffer();
+                readings.push(performance.now() - started);
+
+                updateMetric("ping", median(readings));
+
+                if (readings.length > 1) {
+                    updateMetric("jitter", meanDeviation(readings));
+                }
+
+                setMeter(Math.max(0, 80 - median(readings)), "Measuring ping");
+            } catch (error) {
+                if (isAbort(error)) {
+                    throw error;
+                }
+
+                lost += 1;
             }
-
-            await response.arrayBuffer();
-            readings.push(performance.now() - started);
-
-            updateMetric("ping", median(readings));
-
-            if (readings.length > 1) {
-                updateMetric("jitter", meanDeviation(readings));
-            }
-
-            setMeter(Math.max(0, 80 - median(readings)), "Measuring ping");
 
             await delay(60, signal);
         }
 
+        if (!readings.length) {
+            throw new Error("Latency test unavailable");
+        }
+
         const average = median(readings);
         const jitter = meanDeviation(readings);
+        const packetLoss = (lost / sent) * 100;
 
         updateMetric("ping", average);
         updateMetric("jitter", jitter);
 
-        return { average, jitter };
+        return { average, jitter, packetLoss };
     }
 
     async function measureDownload(signal) {
@@ -665,7 +696,7 @@ function initializeSpeedTest() {
                     // Cancelling closes this stream cleanly, instead of leaving
                     // the rest of a 60 MB body to arrive in the background
                     // after the test has moved on.
-                    await reader.cancel().catch(() => {});
+                    await reader.cancel().catch(() => { });
                     break;
                 }
             }
@@ -875,11 +906,10 @@ function initializeSpeedTest() {
         if (download >= 60) {
             return {
                 title: "Comfortable for everyday use.",
-                copy: `HD and 4K streaming, video calls and downloads are all fine. ${
-                    jitter > 15
+                copy: `HD and 4K streaming, video calls and downloads are all fine. ${jitter > 15
                         ? "Jitter is on the high side, so calls may occasionally break up."
                         : "Latency is steady enough for video calls and most gaming."
-                }`
+                    }`
             };
         }
 
@@ -903,7 +933,73 @@ function initializeSpeedTest() {
         };
     }
 
-    /* ------------------------------------------------------------- history */
+    // Gaming cares about consistency, not throughput: a fast line with a
+    // shaky ping still stutters, and 50 Mbps with a rock-steady 15 ms ping
+    // is plenty. Packet loss is the harshest input because even a small
+    // amount is felt directly as rubber-banding or missed hits.
+    function getGamingRating(ping, jitter, packetLoss) {
+        const loss = Number.isFinite(packetLoss) ? packetLoss : 0;
+
+        if (ping <= 30 && jitter <= 5 && loss <= 0.5) {
+            return {
+                tier: "excellent",
+                label: "Excellent",
+                title: "Great for competitive gaming.",
+                copy: "Low, steady ping with next to no dropped requests — this handles fast-paced and competitive online games comfortably."
+            };
+        }
+
+        if (ping <= 60 && jitter <= 15 && loss <= 1.5) {
+            return {
+                tier: "good",
+                label: "Good",
+                title: "Solid for most online games.",
+                copy: "Ping and jitter are both in a comfortable range for co-op, shooters and most ranked play, with only occasional variance."
+            };
+        }
+
+        if (ping <= 100 && jitter <= 30 && loss <= 3) {
+            return {
+                tier: "fair",
+                label: "Playable",
+                title: "Playable, with occasional lag.",
+                copy: "Turn-based and slower-paced games should feel fine. Fast-twitch competitive play may show occasional lag spikes or rubber-banding."
+            };
+        }
+
+        return {
+            tier: "poor",
+            label: "Rough",
+            title: "Expect noticeable lag.",
+            copy: "Ping, jitter or packet loss are high enough to be felt directly in most online games. A wired connection or a closer access point usually helps most."
+        };
+    }
+
+    function renderGamingResult(result) {
+        if (!readouts.gamingCard) {
+            return;
+        }
+
+        const rating = getGamingRating(result.ping, result.jitter, result.packetLoss);
+
+        setText(readouts.gamingTitle, rating.title);
+        setText(readouts.gamingCopy, rating.copy);
+        setText(readouts.gamingPing, `${formatNumber(result.ping)} ms`);
+        setText(readouts.gamingJitter, `${formatNumber(result.jitter)} ms`);
+        setText(
+            readouts.gamingLoss,
+            Number.isFinite(result.packetLoss) ? `${formatNumber(result.packetLoss)}%` : "—"
+        );
+
+        if (readouts.gamingBadge) {
+            readouts.gamingBadge.textContent = rating.label;
+            readouts.gamingBadge.dataset.tier = rating.tier;
+        }
+
+        readouts.gamingCard.hidden = false;
+    }
+
+
 
     const HISTORY_KEY = "signal-speed-history";
 
@@ -954,8 +1050,8 @@ function initializeSpeedTest() {
             row.className = "history-row";
             row.innerHTML = `
                 <span class="history-date">${escapeHtml(
-                    date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
-                )} · ${escapeHtml(date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }))}</span>
+                date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+            )} · ${escapeHtml(date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }))}</span>
                 <span class="history-speed">↓ ${formatNumber(result.download)} <small>Mbps</small></span>
                 <span class="history-speed">↑ ${formatNumber(result.upload)} <small>Mbps</small></span>
             `;
@@ -1003,13 +1099,14 @@ function initializeSpeedTest() {
         }
 
         const rows = [
-            ["Date", "Download Mbps", "Upload Mbps", "Ping ms", "Jitter ms", "Quality"],
+            ["Date", "Download Mbps", "Upload Mbps", "Ping ms", "Jitter ms", "Packet Loss %", "Quality"],
             ...history.map((result) => [
                 new Date(result.at).toISOString(),
                 formatNumber(result.download),
                 formatNumber(result.upload),
                 formatNumber(result.ping),
                 Number.isFinite(result.jitter) ? formatNumber(result.jitter) : "",
+                Number.isFinite(result.packetLoss) ? formatNumber(result.packetLoss) : "",
                 result.rating || getQuality(result.download, result.upload, result.ping, result.jitter)
             ])
         ];
@@ -1073,6 +1170,93 @@ function initializeSpeedTest() {
         );
     }
 
+    // Signal strength: browsers never expose raw dBm/RSSI (that would be a
+    // strong fingerprinting signal, same reasoning as the Wi-Fi band note
+    // above), so this is a 1-5 bar reading built from whatever the browser
+    // *does* expose — Network Information API's effectiveType/downlink/rtt
+    // before a test, and the actual measured ping/download once one has run.
+    // No location permission is requested for this — it isn't needed for
+    // either data source.
+    function computeSignalStrength(result) {
+        if (result && Number.isFinite(result.download)) {
+            const { download, ping, jitter } = result;
+
+            if (download >= 150 && ping <= 30 && jitter <= 6) {
+                return { level: 5, tier: "strong", label: "Excellent" };
+            }
+
+            if (download >= 60 && ping <= 60) {
+                return { level: 4, tier: "good", label: "Strong" };
+            }
+
+            if (download >= 20 && ping <= 110) {
+                return { level: 3, tier: "fair", label: "Good" };
+            }
+
+            if (download >= 5) {
+                return { level: 2, tier: "weak", label: "Fair" };
+            }
+
+            return { level: 1, tier: "weak", label: "Weak" };
+        }
+
+        if (CONNECTION_API && CONNECTION_API.effectiveType) {
+            const effective = CONNECTION_API.effectiveType;
+            const downlink = CONNECTION_API.downlink;
+
+            if (effective === "4g") {
+                return Number.isFinite(downlink) && downlink >= 8
+                    ? { level: 5, tier: "strong", label: "Excellent" }
+                    : { level: 4, tier: "good", label: "Strong" };
+            }
+
+            if (effective === "3g") {
+                return { level: 3, tier: "fair", label: "Good" };
+            }
+
+            if (effective === "2g") {
+                return { level: 2, tier: "weak", label: "Fair" };
+            }
+
+            return { level: 1, tier: "weak", label: "Weak" };
+        }
+
+        return { level: 0, tier: "", label: "Unknown" };
+    }
+
+    function renderSignalStrength(result) {
+        const transport = readTransport();
+        const strength = computeSignalStrength(result);
+
+        if (readouts.signalBars) {
+            readouts.signalBars.dataset.level = String(strength.level);
+            readouts.signalBars.dataset.tier = strength.tier;
+        }
+
+        if (!strength.level) {
+            setText(readouts.signalStrength, "Unknown");
+            setText(
+                readouts.signalStrengthNote,
+                "This browser exposes no signal information yet. Running a test gives an estimate from the measured ping and download speed."
+            );
+            return;
+        }
+
+        const label = `${transport.certain ? transport.label : "Connection"} · ${strength.label}`;
+
+        setMarkup(
+            readouts.signalStrength,
+            escapeHtml(label) + qualifier(result ? "measured" : "estimated", result ? "measured" : "reported")
+        );
+
+        setText(
+            readouts.signalStrengthNote,
+            result
+                ? `Derived from ${formatNumber(result.ping)} ms ping and ${formatNumber(result.download)} Mbps down. Not a radio dBm reading — no browser exposes that.`
+                : "A quick estimate from the browser's own connection tier, before any measurement. Run a test for an accurate reading."
+        );
+    }
+
     function renderTransport() {
         const transport = readTransport();
         const scope = transport.scope ? ` (${transport.scope})` : "";
@@ -1126,6 +1310,7 @@ function initializeSpeedTest() {
         }
 
         renderBrowserReport();
+        renderSignalStrength(state.lastResult || null);
 
         const pill = elements.status.closest(".connection-pill");
 
@@ -1172,6 +1357,9 @@ function initializeSpeedTest() {
         state.lastResult = null;
         elements.resultSummary.hidden = true;
         elements.copyResult.disabled = true;
+        if (readouts.gamingCard) {
+            readouts.gamingCard.hidden = true;
+        }
         resetMetrics();
 
         const { signal } = state.controller;
@@ -1181,7 +1369,7 @@ function initializeSpeedTest() {
             setActiveStat("ping");
             elements.stage.innerHTML = "Finding the fastest route to <strong>Cloudflare</strong>…";
 
-            const { average: ping, jitter } = await measurePing(signal);
+            const { average: ping, jitter, packetLoss } = await measurePing(signal);
 
             setStep(1);
             setActiveStat("download");
@@ -1198,11 +1386,13 @@ function initializeSpeedTest() {
             const upload = await measureUpload(signal);
 
             const rating = getQuality(download, upload, ping, jitter);
-            const result = { ping, download, upload, jitter, rating };
+            const result = { ping, download, upload, jitter, packetLoss, rating };
             const saved = saveResult(result);
 
             setResultSummary(result, getRecommendation(download, upload, ping, jitter));
             renderLinkClass(result);
+            renderSignalStrength(result);
+            renderGamingResult(result);
             setActiveStat(null);
             setMeter(download, "Test complete");
             setStep(3);
@@ -1317,9 +1507,102 @@ function initializeTheme() {
     });
 }
 
+/* --------------------------------------------------------------- feedback */
+
+// No backend exists to send this to, so it is stored locally only — same
+// honesty as the speed-test history. Capped list, no account, no personal
+// info collected beyond whatever the person chooses to type.
+const FEEDBACK_KEY = "signal-feedback";
+
+function initializeFeedback() {
+    const card = document.querySelector(".feedback-card");
+
+    if (!card) {
+        return;
+    }
+
+    const starButtons = Array.from(card.querySelectorAll(".star-btn"));
+    const textarea = card.querySelector("#feedbackText");
+    const submitButton = card.querySelector("#feedbackSubmit");
+    const thanks = card.querySelector("#feedbackThanks");
+
+    let rating = 0;
+
+    function paintStars(upTo, previewOnly) {
+        starButtons.forEach((button) => {
+            const value = Number(button.dataset.value);
+            const active = value <= upTo;
+
+            button.classList.toggle(previewOnly ? "is-preview" : "is-active", active);
+
+            if (!previewOnly) {
+                button.classList.remove("is-preview");
+                button.setAttribute("aria-pressed", active ? "true" : "false");
+            }
+        });
+    }
+
+    starButtons.forEach((button) => {
+        const value = Number(button.dataset.value);
+
+        button.addEventListener("mouseenter", () => paintStars(value, true));
+        button.addEventListener("focus", () => paintStars(value, true));
+
+        button.addEventListener("click", () => {
+            rating = value;
+            paintStars(rating, false);
+        });
+    });
+
+    card.querySelector("#feedbackStars").addEventListener("mouseleave", () => paintStars(rating, true));
+    card.addEventListener("focusout", (event) => {
+        if (!card.contains(event.relatedTarget)) {
+            paintStars(rating, true);
+        }
+    });
+
+    function saveFeedback(entry) {
+        try {
+            const raw = localStorage.getItem(FEEDBACK_KEY);
+            const existing = raw ? JSON.parse(raw) : [];
+            const history = Array.isArray(existing) ? existing : [];
+
+            history.unshift(entry);
+            localStorage.setItem(FEEDBACK_KEY, JSON.stringify(history.slice(0, 20)));
+            return true;
+        } catch (error) {
+            console.warn("Could not save feedback:", error);
+            return false;
+        }
+    }
+
+    submitButton.addEventListener("click", () => {
+        const text = textarea.value.trim();
+
+        if (!rating && !text) {
+            textarea.focus();
+            return;
+        }
+
+        saveFeedback({ rating, text, at: Date.now() });
+
+        submitButton.disabled = true;
+        thanks.hidden = false;
+
+        setTimeout(() => {
+            rating = 0;
+            textarea.value = "";
+            paintStars(0, false);
+            submitButton.disabled = false;
+            thanks.hidden = true;
+        }, 3200);
+    });
+}
+
 function start() {
     initializeTheme();
     initializeSpeedTest();
+    initializeFeedback();
 }
 
 if (document.readyState === "loading") {
