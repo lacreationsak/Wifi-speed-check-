@@ -1114,16 +1114,15 @@ html[data-theme="dark"] .orbit-glass-2 {
 .orbit-core-shadow {
     position: absolute;
     left: 50%;
-    top: 50%;
-    width: 62%;
-    max-width: 330px;
-    aspect-ratio: 1 / 0.62;
-    transform: translate(-50%, -14%);
+    bottom: 11%;
+    width: 58%;
+    max-width: 240px;
+    height: 34px;
+    transform: translateX(-50%);
     border-radius: 50%;
     background:
-        radial-gradient(ellipse at 50% 62%, var(--gauge-floor) 0%, rgba(20, 64, 140, 0.13) 46%, transparent 72%);
-    filter: blur(38px);
-    opacity: 0.55;
+        radial-gradient(ellipse at center, rgba(20, 64, 140, 0.45) 0%, rgba(20, 64, 140, 0.24) 45%, transparent 75%);
+    filter: blur(11px);
     pointer-events: none;
     animation: coreShadowBreathe 7s ease-in-out infinite;
 }
@@ -1260,13 +1259,13 @@ html[data-theme="dark"] .orbit-glass-2 {
 
     0%,
     100% {
-        transform: translate(-50%, -14%) scale(1);
+        transform: translateX(-50%) scale(1);
         opacity: 0.85;
     }
 
     50% {
-        transform: translate(-50%, -8%) scale(1.1, 0.86);
-        opacity: 0.58;
+        transform: translateX(-50%) scale(1.08, 0.82);
+        opacity: 0.6;
     }
 }
 
@@ -1994,6 +1993,25 @@ html[data-theme="dark"] .orbit-glass-2 {
     filter: blur(28px);
     pointer-events: none;
     animation: haloPulse 6s ease-in-out infinite;
+}
+
+/* The flattened contact shadow the dial "rests" on — a wide, squashed
+   ellipse sitting at the floor of the card, well below the puck's own
+   underside shadow (.meter::after). This is the piece that reads as
+   "object sitting on a surface" rather than just a glow behind it. */
+.meter-wrap::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 2%;
+    width: 58%;
+    height: 9%;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, var(--gauge-floor) 0%, rgba(20, 64, 140, 0.14) 50%, transparent 78%);
+    filter: blur(10px);
+    z-index: -1;
+    pointer-events: none;
 }
 
 @keyframes haloPulse {
