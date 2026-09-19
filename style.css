@@ -1228,6 +1228,7 @@ html[data-theme="dark"] .orbit-glass-2 {
 }
 
 .orbit-core-inner {
+    container-type: inline-size;
     position: relative;
     z-index: 1;
     width: 70%;
@@ -1241,6 +1242,7 @@ html[data-theme="dark"] .orbit-glass-2 {
     justify-content: center;
     text-align: center;
     padding: 8% 10%;
+    overflow: hidden;
 }
 
 @keyframes coreFloat {
@@ -1270,13 +1272,16 @@ html[data-theme="dark"] .orbit-glass-2 {
 }
 
 .orbit-core-phase {
+    max-width: 100%;
     color: #5c7fb4;
-    font-size: 0.6rem;
+    font-size: clamp(0.56rem, 6.5cqi, 0.6rem);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     font-family: "JetBrains Mono", ui-monospace, monospace;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .orbit-core-number {
@@ -1284,7 +1289,8 @@ html[data-theme="dark"] .orbit-glass-2 {
     align-items: baseline;
     gap: 4px;
     margin-top: 4px;
-    font-size: clamp(1.6rem, 8cqi, 2.1rem);
+    max-width: 100%;
+    font-size: clamp(1.3rem, 12cqi, 2.1rem);
     font-weight: 700;
     line-height: 0.95;
     letter-spacing: -0.03em;
@@ -1293,7 +1299,7 @@ html[data-theme="dark"] .orbit-glass-2 {
 }
 
 .orbit-core-unit {
-    font-size: 0.66rem;
+    font-size: clamp(0.56rem, 5.5cqi, 0.66rem);
     font-weight: 700;
     letter-spacing: 0.02em;
     color: var(--lg-text-sub);
@@ -1301,15 +1307,27 @@ html[data-theme="dark"] .orbit-glass-2 {
 
 .orbit-core-caption {
     margin-top: 6px;
-    font-size: 0.66rem;
+    max-width: 100%;
+    font-size: clamp(0.52rem, 5.5cqi, 0.66rem);
     font-weight: 500;
     color: var(--lg-text-sub);
     letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Trust badges — same glass-panel component used above the paragraph,
    floating around the sample circle instead of pinned to the real
-   cockpit's corners. */
+   cockpit's corners. .orbit-badge-grid is the new wrapper around all
+   four: on desktop it's `display:contents` so it's invisible to
+   layout and each badge still positions itself absolutely against
+   .orbit-stage-inner exactly as before. On mobile (below) it becomes
+   the actual 2x2 grid container. */
+.orbit-badge-grid {
+    display: contents;
+}
+
 .orbit-badge {
     position: absolute;
     z-index: 3;
@@ -1423,13 +1441,69 @@ html[data-theme="dark"] .orbit-glass-2 {
 }
 
 @media (max-width: 900px) {
+    /* Reflow the four floating badges into a static 2x2 grid sitting
+       below the dial, instead of hiding them. .orbit-badge-grid is
+       absolutely positioned (anchored to the bottom of
+       .orbit-stage-inner via top:100%) so it doesn't disturb that
+       box's own fixed height — which the dial's centered (top:50%)
+       elements depend on — while still reserving real layout space
+       via .orbit-stage's padding-bottom below. */
+    .orbit-badge-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: 28px;
+    }
+
     .orbit-badge {
-        display: none;
+        position: static;
+        z-index: auto;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        animation: none;
+    }
+
+    .orbit-badge-copy {
+        white-space: normal;
+        min-width: 0;
+    }
+
+    .orbit-stage {
+        /* Reserve room below .orbit-stage-inner for the badge grid,
+           which is absolutely positioned and so doesn't push this
+           section's own height out on its own. Two rows of badges at
+           roughly 70px each, the 28px gap above them, and a little
+           breathing room after. */
+        padding-bottom: 224px;
     }
 
     .orbit-stage-inner {
         aspect-ratio: auto;
-        height: 280px;
+        height: 320px;
+    }
+
+    /* The 47% cap that works fine against the desktop 640px stage
+       shrinks the dial too far once the stage is pinned to a fixed
+       height on narrower screens — not enough room left for "Sample
+       reading" / "Download speed" to fit without truncating. Badges
+       are laid out below now instead of floating over the stage, so
+       there's headroom to let the dial grow. */
+    .orbit-core {
+        max-width: 66%;
+    }
+
+    /* The floor shadow's position was tuned against the smaller
+       (47%-capped) dial. Now that the dial is bigger on mobile, its
+       own bottom edge reaches further down the stage — push the
+       shadow down to clear it, or it just sits hidden underneath
+       the puck instead of pooling below it. */
+    .orbit-core-shadow {
+        bottom: 4%;
     }
 }
 
@@ -2121,6 +2195,7 @@ html[data-theme="dark"] .orbit-glass-2 {
 }
 
 .meter-inner {
+    container-type: inline-size;
     position: relative;
     z-index: 1;
     width: 70%;
@@ -3169,7 +3244,6 @@ html[data-theme="dark"] .meter-lens {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    margin-top: 18px;
     padding: 13px 26px;
     border: none;
     border-radius: var(--radius-capsule);
@@ -3209,6 +3283,205 @@ html[data-theme="dark"] .meter-lens {
     display: none !important;
 }
 
+.feedback-submit-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.feedback-scope {
+    font-size: 0.74rem;
+    color: var(--lg-text-sub);
+}
+
+.feedback-scope.is-live {
+    color: var(--lg-icon);
+    font-weight: 700;
+}
+
+.feedback-scope.is-live::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background: var(--accent-electric);
+    box-shadow: 0 0 6px var(--accent-electric);
+    vertical-align: 1px;
+}
+
+.feedback-divider {
+    height: 1px;
+    margin: 30px 0 22px;
+    background: linear-gradient(90deg, transparent, var(--line-b), transparent);
+}
+
+.feedback-feed-heading {
+    margin-bottom: 14px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--lg-text-sub);
+    text-align: left;
+}
+
+.feedback-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    text-align: left;
+    max-height: 480px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.feedback-empty {
+    padding: 18px 4px;
+    color: var(--lg-text-sub);
+    font-size: 0.84rem;
+    text-align: center;
+}
+
+.feedback-item {
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: var(--lg-fill-hover);
+    border: 1px solid var(--lg-border-soft);
+    box-shadow: var(--lg-rim);
+}
+
+.feedback-item-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.feedback-stars-readout {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.feedback-stars-readout svg {
+    width: 15px;
+    height: 15px;
+    color: var(--line-e);
+}
+
+.feedback-stars-readout svg.is-filled {
+    color: var(--warning);
+}
+
+.feedback-item-head time {
+    font-size: 0.7rem;
+    color: var(--lg-text-sub);
+    white-space: nowrap;
+}
+
+.feedback-item-text {
+    margin: 10px 0 0;
+    font-size: 0.86rem;
+    line-height: 1.55;
+    color: var(--lg-text);
+    overflow-wrap: anywhere;
+}
+
+.feedback-reply-toggle {
+    margin-top: 10px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--lg-icon);
+    font-size: 0.74rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.feedback-reply-toggle:hover {
+    text-decoration: underline;
+}
+
+.feedback-replies {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.feedback-replies:empty {
+    display: none;
+}
+
+.feedback-reply {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    padding-left: 14px;
+    border-left: 2px solid var(--tint-accent-border);
+}
+
+.feedback-reply-dot {
+    display: none;
+}
+
+.feedback-reply p {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--lg-text);
+    overflow-wrap: anywhere;
+}
+
+.feedback-reply time {
+    font-size: 0.66rem;
+    color: var(--lg-text-sub);
+}
+
+.feedback-reply-form {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.feedback-reply-form input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px;
+    border-radius: var(--radius-capsule);
+    background: var(--lg-fill);
+    border: 1px solid var(--lg-border-soft);
+    color: var(--lg-text);
+    font: inherit;
+    font-size: 0.8rem;
+}
+
+.feedback-reply-form input:focus {
+    outline: none;
+    border-color: var(--tint-accent-border-strong);
+    box-shadow: 0 0 0 3px var(--tint-accent-bg-strong);
+}
+
+.feedback-reply-form button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: var(--radius-capsule);
+    background: linear-gradient(var(--tint-accent-bg-strong), var(--tint-accent-bg-strong)), var(--lg-fill);
+    border: 1px solid var(--tint-accent-border-strong);
+    color: var(--lg-icon);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.feedback-reply-form button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 @media (max-width: 640px) {
     .feedback-card {
         padding: 28px 22px 30px;
@@ -3222,6 +3495,15 @@ html[data-theme="dark"] .meter-lens {
     .star-btn svg {
         width: 26px;
         height: 26px;
+    }
+
+    .feedback-submit-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .feedback-feed {
+        max-height: none;
     }
 }
 

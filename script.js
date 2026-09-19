@@ -1509,10 +1509,226 @@ function initializeTheme() {
 
 /* --------------------------------------------------------------- feedback */
 
-// No backend exists to send this to, so it is stored locally only — same
-// honesty as the speed-test history. Capped list, no account, no personal
-// info collected beyond whatever the person chooses to type.
-const FEEDBACK_KEY = "signal-feedback";
+// Making feedback "live" (every visitor sees the same wall, not just their
+// own browser) needs somewhere shared to store it — a static site has no
+// server of its own to do that. This uses Firebase Firestore's free tier
+// for that shared storage, configured in firebase-config.js.
+//
+// Until firebase-config.js has real project credentials in it, this falls
+// back to saving in the current browser only (localStorage), so the
+// feature still works end-to-end rather than silently failing — it just
+// isn't visible to anyone else yet. See firebase-config.js and
+// firestore.rules for the one-time setup that makes it live.
+
+const FEEDBACK_KEY = "signal-feedback-v2";
+
+function escapeHtmlFeedback(value) {
+    return String(value).replace(/[&<>"]/g, (character) => (
+        { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[character]
+    ));
+}
+
+function formatFeedbackTime(timestamp) {
+    const diff = Date.now() - timestamp;
+    const minute = 60000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    if (!Number.isFinite(diff) || diff < 0) {
+        return "just now";
+    }
+
+    if (diff < minute) {
+        return "just now";
+    }
+
+    if (diff < hour) {
+        const value = Math.round(diff / minute);
+        return `${value}m ago`;
+    }
+
+    if (diff < day) {
+        const value = Math.round(diff / hour);
+        return `${value}h ago`;
+    }
+
+    if (diff < 30 * day) {
+        const value = Math.round(diff / day);
+        return `${value}d ago`;
+    }
+
+    return new Date(timestamp).toLocaleDateString();
+}
+
+function renderStarReadout(rating) {
+    let markup = "";
+
+    for (let index = 1; index <= 5; index += 1) {
+        markup += `<svg viewBox="0 0 24 24" fill="currentColor" class="${index <= rating ? "is-filled" : ""}" aria-hidden="true">` +
+            '<path d="m12 2.5 2.9 6.6 7.1.7-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7-5.4-4.7 7.1-.7Z"/></svg>';
+    }
+
+    return markup;
+}
+
+function isFirebaseConfigured() {
+    const config = window.SIGNAL_FIREBASE_CONFIG;
+
+    return Boolean(
+        window.firebase &&
+        config &&
+        config.apiKey &&
+        String(config.apiKey).indexOf("YOUR_") !== 0
+    );
+}
+
+// Real cross-visitor backend: Firestore, live via onSnapshot.
+function createFirestoreFeedbackBackend() {
+    const app = firebase.apps && firebase.apps.length
+        ? firebase.app()
+        : firebase.initializeApp(window.SIGNAL_FIREBASE_CONFIG);
+    const db = firebase.firestore(app);
+    const feedbackCollection = db.collection("feedback");
+
+    return {
+        live: true,
+
+        subscribeFeed(onChange) {
+            return feedbackCollection
+                .orderBy("createdAt", "desc")
+                .limit(50)
+                .onSnapshot(
+                    (snapshot) => {
+                        onChange(snapshot.docs.map((doc) => {
+                            const data = doc.data();
+
+                            return {
+                                id: doc.id,
+                                rating: Number(data.rating) || 0,
+                                text: typeof data.text === "string" ? data.text : "",
+                                at: data.createdAt && data.createdAt.toMillis ? data.createdAt.toMillis() : Date.now()
+                            };
+                        }));
+                    },
+                    (error) => console.warn("Feedback feed unavailable:", error)
+                );
+        },
+
+        subscribeReplies(feedbackId, onChange) {
+            return feedbackCollection
+                .doc(feedbackId)
+                .collection("replies")
+                .orderBy("createdAt", "asc")
+                .limit(50)
+                .onSnapshot(
+                    (snapshot) => {
+                        onChange(snapshot.docs.map((doc) => {
+                            const data = doc.data();
+
+                            return {
+                                id: doc.id,
+                                text: typeof data.text === "string" ? data.text : "",
+                                at: data.createdAt && data.createdAt.toMillis ? data.createdAt.toMillis() : Date.now()
+                            };
+                        }));
+                    },
+                    (error) => console.warn("Replies unavailable:", error)
+                );
+        },
+
+        addFeedback(entry) {
+            return feedbackCollection.add({
+                rating: entry.rating,
+                text: entry.text,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        },
+
+        addReply(feedbackId, text) {
+            return feedbackCollection.doc(feedbackId).collection("replies").add({
+                text,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+    };
+}
+
+// Same-device-only fallback so the UI still works before Firebase is
+// connected. Mirrors the Firestore backend's shape (subscribe/add
+// functions) so the calling code never needs to know which is active.
+function createLocalFeedbackBackend() {
+    function read() {
+        try {
+            const raw = localStorage.getItem(FEEDBACK_KEY);
+            const parsed = raw ? JSON.parse(raw) : [];
+
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function write(items) {
+        try {
+            localStorage.setItem(FEEDBACK_KEY, JSON.stringify(items.slice(0, 50)));
+        } catch (error) {
+            console.warn("Could not save feedback:", error);
+        }
+    }
+
+    const feedListeners = new Set();
+
+    function notifyFeed() {
+        const items = read();
+        feedListeners.forEach((listener) => listener(items));
+    }
+
+    return {
+        live: false,
+
+        subscribeFeed(onChange) {
+            feedListeners.add(onChange);
+            onChange(read());
+            return () => feedListeners.delete(onChange);
+        },
+
+        subscribeReplies(feedbackId, onChange) {
+            const item = read().find((entry) => entry.id === feedbackId);
+            onChange(item && Array.isArray(item.replies) ? item.replies : []);
+            return () => {};
+        },
+
+        addFeedback(entry) {
+            const items = read();
+
+            items.unshift({
+                id: `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+                rating: entry.rating,
+                text: entry.text,
+                at: Date.now(),
+                replies: []
+            });
+
+            write(items);
+            notifyFeed();
+            return Promise.resolve();
+        },
+
+        addReply(feedbackId, text) {
+            const items = read();
+            const item = items.find((entry) => entry.id === feedbackId);
+
+            if (item) {
+                item.replies = Array.isArray(item.replies) ? item.replies : [];
+                item.replies.push({ id: `reply-${Date.now().toString(36)}`, text, at: Date.now() });
+                write(items);
+                notifyFeed();
+            }
+
+            return Promise.resolve();
+        }
+    };
+}
 
 function initializeFeedback() {
     const card = document.querySelector(".feedback-card");
@@ -1525,8 +1741,27 @@ function initializeFeedback() {
     const textarea = card.querySelector("#feedbackText");
     const submitButton = card.querySelector("#feedbackSubmit");
     const thanks = card.querySelector("#feedbackThanks");
+    const feed = card.querySelector("#feedbackFeed");
+    const scopeNote = card.querySelector("#feedbackScope");
 
     let rating = 0;
+    const replySubscriptions = new Map();
+
+    let backend;
+
+    try {
+        backend = isFirebaseConfigured() ? createFirestoreFeedbackBackend() : createLocalFeedbackBackend();
+    } catch (error) {
+        console.warn("Falling back to on-device feedback:", error);
+        backend = createLocalFeedbackBackend();
+    }
+
+    if (scopeNote) {
+        scopeNote.textContent = backend.live
+            ? "Visible to everyone."
+            : "Saved on this device only, until a live backend is connected (see firebase-config.js).";
+        scopeNote.classList.toggle("is-live", backend.live);
+    }
 
     function paintStars(upTo, previewOnly) {
         starButtons.forEach((button) => {
@@ -1561,20 +1796,115 @@ function initializeFeedback() {
         }
     });
 
-    function saveFeedback(entry) {
-        try {
-            const raw = localStorage.getItem(FEEDBACK_KEY);
-            const existing = raw ? JSON.parse(raw) : [];
-            const history = Array.isArray(existing) ? existing : [];
+    function renderReplies(feedbackId, replies) {
+        const container = feed.querySelector(`.feedback-item[data-id="${window.CSS && CSS.escape ? CSS.escape(feedbackId) : feedbackId}"] [data-replies]`);
 
-            history.unshift(entry);
-            localStorage.setItem(FEEDBACK_KEY, JSON.stringify(history.slice(0, 20)));
-            return true;
-        } catch (error) {
-            console.warn("Could not save feedback:", error);
-            return false;
+        if (!container) {
+            return;
         }
+
+        container.innerHTML = replies
+            .map((reply) => (
+                '<div class="feedback-reply">' +
+                '<span class="feedback-reply-dot" aria-hidden="true"></span>' +
+                `<div><p>${escapeHtmlFeedback(reply.text)}</p><time>${formatFeedbackTime(reply.at)}</time></div>` +
+                "</div>"
+            ))
+            .join("");
     }
+
+    function attachReplyForm(feedbackId, item) {
+        const body = item.querySelector(".feedback-item-body");
+        const existingForm = body.querySelector(".feedback-reply-form");
+
+        if (existingForm) {
+            existingForm.remove();
+            return;
+        }
+
+        const form = document.createElement("form");
+        form.className = "feedback-reply-form";
+        form.innerHTML =
+            '<input type="text" maxlength="500" placeholder="Write a reply…" aria-label="Write a reply" />' +
+            '<button type="submit">Reply</button>';
+
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            const input = form.querySelector("input");
+            const text = input.value.trim();
+
+            if (!text) {
+                return;
+            }
+
+            const button = form.querySelector("button");
+            button.disabled = true;
+            input.disabled = true;
+
+            Promise.resolve(backend.addReply(feedbackId, text))
+                .then(() => form.remove())
+                .catch((error) => {
+                    console.warn("Could not post reply:", error);
+                    button.disabled = false;
+                    input.disabled = false;
+                });
+        });
+
+        body.appendChild(form);
+        form.querySelector("input").focus();
+    }
+
+    function renderFeed(items) {
+        if (!feed) {
+            return;
+        }
+
+        const currentIds = new Set(items.map((item) => item.id));
+
+        replySubscriptions.forEach((unsubscribe, id) => {
+            if (!currentIds.has(id)) {
+                unsubscribe();
+                replySubscriptions.delete(id);
+            }
+        });
+
+        if (!items.length) {
+            feed.innerHTML = '<p class="feedback-empty">No feedback yet — be the first to share yours.</p>';
+            return;
+        }
+
+        feed.innerHTML = items
+            .map((item) => (
+                `<article class="feedback-item" data-id="${item.id}">` +
+                '<div class="feedback-item-head">' +
+                `<span class="feedback-stars-readout">${renderStarReadout(item.rating)}</span>` +
+                `<time>${formatFeedbackTime(item.at)}</time>` +
+                "</div>" +
+                '<div class="feedback-item-body">' +
+                (item.text ? `<p class="feedback-item-text">${escapeHtmlFeedback(item.text)}</p>` : "") +
+                '<div class="feedback-replies" data-replies></div>' +
+                '<button type="button" class="feedback-reply-toggle">Reply</button>' +
+                "</div>" +
+                "</article>"
+            ))
+            .join("");
+
+        feed.querySelectorAll(".feedback-item").forEach((itemEl) => {
+            const id = itemEl.dataset.id;
+
+            if (!replySubscriptions.has(id)) {
+                const unsubscribe = backend.subscribeReplies(id, (replies) => renderReplies(id, replies));
+                replySubscriptions.set(id, unsubscribe);
+            }
+
+            itemEl.querySelector(".feedback-reply-toggle").addEventListener("click", () => {
+                attachReplyForm(id, itemEl);
+            });
+        });
+    }
+
+    backend.subscribeFeed(renderFeed);
 
     submitButton.addEventListener("click", () => {
         const text = textarea.value.trim();
@@ -1584,18 +1914,24 @@ function initializeFeedback() {
             return;
         }
 
-        saveFeedback({ rating, text, at: Date.now() });
-
         submitButton.disabled = true;
-        thanks.hidden = false;
 
-        setTimeout(() => {
-            rating = 0;
-            textarea.value = "";
-            paintStars(0, false);
-            submitButton.disabled = false;
-            thanks.hidden = true;
-        }, 3200);
+        Promise.resolve(backend.addFeedback({ rating, text }))
+            .then(() => {
+                thanks.hidden = false;
+
+                setTimeout(() => {
+                    rating = 0;
+                    textarea.value = "";
+                    paintStars(0, false);
+                    submitButton.disabled = false;
+                    thanks.hidden = true;
+                }, 3200);
+            })
+            .catch((error) => {
+                console.warn("Could not submit feedback:", error);
+                submitButton.disabled = false;
+            });
     });
 }
 

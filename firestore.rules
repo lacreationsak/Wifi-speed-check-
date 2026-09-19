@@ -1,0 +1,48 @@
+// Firestore security rules for Signal's feedback wall.
+//
+// Paste this into Firebase console → Firestore Database → Rules → Publish.
+//
+// There is no login system on this site, so this is intentionally a public
+// wall: anyone can read every entry, and anyone can post a new one or a
+// reply. What it does NOT allow is editing or deleting anyone's post
+// (including your own) from the client, and it rejects anything that
+// doesn't look like a well-formed entry (wrong types, missing fields, or
+// a wall of text). That keeps out accidental corruption and the laziest
+// abuse, but — being open and account-free by design — it can't fully
+// stop a determined bad actor the way a server with auth and rate
+// limiting could. If abuse becomes a real problem, the next step up is
+// adding Firebase App Check and/or anonymous auth, which this file does
+// not attempt to cover.
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /feedback/{feedbackId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasOnly(['rating', 'text', 'createdAt'])
+                    && request.resource.data.rating is int
+                    && request.resource.data.rating >= 0
+                    && request.resource.data.rating <= 5
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() <= 500
+                    && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if false;
+
+      match /replies/{replyId} {
+        allow read: if true;
+
+        allow create: if request.resource.data.keys().hasOnly(['text', 'createdAt'])
+                      && request.resource.data.text is string
+                      && request.resource.data.text.size() > 0
+                      && request.resource.data.text.size() <= 500
+                      && request.resource.data.createdAt == request.time;
+
+        allow update, delete: if false;
+      }
+    }
+  }
+}

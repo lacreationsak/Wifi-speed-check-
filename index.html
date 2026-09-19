@@ -115,50 +115,52 @@
             </div>
 
             <div class="orbit-stage-inner">
-                <div class="orbit-badge orbit-badge-tl" aria-hidden="true">
-                    <span class="orbit-badge-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" />
-                        </svg>
-                    </span>
-                    <span class="orbit-badge-copy"><strong>Test &amp; measure</strong><small>Know your
-                            line</small></span>
-                </div>
-                <div class="orbit-badge orbit-badge-tr" aria-hidden="true">
-                    <span class="orbit-badge-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                            stroke-linecap="round">
-                            <path d="M3 12.5a13 13 0 0 1 18 0" />
-                            <path d="M6.5 16a8 8 0 0 1 11 0" />
-                            <path d="M10 19.5a3 3 0 0 1 4 0" />
-                            <circle cx="12" cy="21" r=".7" fill="currentColor" />
-                        </svg>
-                    </span>
-                    <span class="orbit-badge-copy"><strong>Every connection</strong><small>For every
-                            network</small></span>
-                </div>
-                <div class="orbit-badge orbit-badge-bl" aria-hidden="true">
-                    <span class="orbit-badge-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                            stroke-linecap="round">
-                            <circle cx="12" cy="12" r="9" />
-                            <path d="M12 7v5l3.5 2" />
-                        </svg>
-                    </span>
-                    <span class="orbit-badge-copy"><strong>Speed · Ping · Jitter</strong><small>All three, one
-                            run</small></span>
-                </div>
-                <div class="orbit-badge orbit-badge-br" aria-hidden="true">
-                    <span class="orbit-badge-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path
-                                d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z" />
-                        </svg>
-                    </span>
-                    <span class="orbit-badge-copy"><strong>Simple &amp; fast</strong><small>No signup
-                            needed</small></span>
+                <div class="orbit-badge-grid">
+                    <div class="orbit-badge orbit-badge-tl" aria-hidden="true">
+                        <span class="orbit-badge-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" />
+                            </svg>
+                        </span>
+                        <span class="orbit-badge-copy"><strong>Test &amp; measure</strong><small>Know your
+                                line</small></span>
+                    </div>
+                    <div class="orbit-badge orbit-badge-tr" aria-hidden="true">
+                        <span class="orbit-badge-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                                stroke-linecap="round">
+                                <path d="M3 12.5a13 13 0 0 1 18 0" />
+                                <path d="M6.5 16a8 8 0 0 1 11 0" />
+                                <path d="M10 19.5a3 3 0 0 1 4 0" />
+                                <circle cx="12" cy="21" r=".7" fill="currentColor" />
+                            </svg>
+                        </span>
+                        <span class="orbit-badge-copy"><strong>Every connection</strong><small>For every
+                                network</small></span>
+                    </div>
+                    <div class="orbit-badge orbit-badge-bl" aria-hidden="true">
+                        <span class="orbit-badge-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                                stroke-linecap="round">
+                                <circle cx="12" cy="12" r="9" />
+                                <path d="M12 7v5l3.5 2" />
+                            </svg>
+                        </span>
+                        <span class="orbit-badge-copy"><strong>Speed · Ping · Jitter</strong><small>All three, one
+                                run</small></span>
+                    </div>
+                    <div class="orbit-badge orbit-badge-br" aria-hidden="true">
+                        <span class="orbit-badge-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z" />
+                            </svg>
+                        </span>
+                        <span class="orbit-badge-copy"><strong>Simple &amp; fast</strong><small>No signup
+                                needed</small></span>
+                    </div>
                 </div>
 
                 <div class="orbit-core-shadow" aria-hidden="true"></div>
@@ -620,16 +622,26 @@
                 <textarea id="feedbackText" class="feedback-textarea" rows="4"
                     placeholder="Write your feedback..."></textarea>
 
-                <button type="button" class="feedback-submit" id="feedbackSubmit">
-                    <span>Submit Feedback</span>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M5 12h14M13 6l6 6-6 6" />
-                    </svg>
-                </button>
+                <div class="feedback-submit-row">
+                    <button type="button" class="feedback-submit" id="feedbackSubmit">
+                        <span>Submit Feedback</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M13 6l6 6-6 6" />
+                        </svg>
+                    </button>
+                    <span class="feedback-scope" id="feedbackScope"></span>
+                </div>
 
-                <p class="feedback-thanks" id="feedbackThanks" role="status" hidden>Thanks — your feedback stays on
-                    this device and helps guide what we build next.</p>
+                <p class="feedback-thanks" id="feedbackThanks" role="status" hidden>Thanks — your feedback has been
+                    posted.</p>
+
+                <div class="feedback-divider" aria-hidden="true"></div>
+
+                <h3 class="feedback-feed-heading">What people are saying</h3>
+                <div class="feedback-feed" id="feedbackFeed">
+                    <p class="feedback-empty">Loading feedback…</p>
+                </div>
             </div>
         </section>
 
@@ -712,6 +724,14 @@
         </div>
     </footer>
 
+    <!-- Firebase powers the live, shared feedback wall below (see
+         firebase-config.js for the one-time setup). If it fails to load
+         (offline, ad-blocker, or not yet configured), script.js falls
+         back to saving feedback on this device only — nothing else on
+         the page depends on it. -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <script src="script.js"></script>
 </body>
 
